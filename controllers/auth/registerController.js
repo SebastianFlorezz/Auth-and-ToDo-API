@@ -1,6 +1,6 @@
-const UserSchema = require("../validation/userSchemaZod");
+const userSchema = require("../../validation/auth/userSchemaZod.js");
 const bcrypt = require("bcrypt");
-const {PrismaClient} = require("../generated/prisma");
+const {PrismaClient} = require("../../generated/prisma");
 const prisma = new PrismaClient();
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
@@ -24,7 +24,7 @@ const registerController = async (req, res) => {
             });
         }
 
-        const validationResult = UserSchema.safeParse({ username, email, password });
+        const validationResult = userSchema.safeParse({ username, email, password });
         
         if (!validationResult.success) {
             const errors = validationResult.error.issues.map(issue => ({
@@ -74,7 +74,7 @@ const registerController = async (req, res) => {
             }
         });
 
-        // Generate JWT token for auto-login after registration
+        
         const token = jwt.sign(
             { 
                 userId: newUser.id,
