@@ -1,4 +1,5 @@
 const {PrismaClient} = require("../../generated/prisma");
+const { missingFieldsError, validationError, databaseError } = require("../../utils/errorResponses.js");
 const prisma = new PrismaClient();
 const taskSchema = require("../../validation/tasks/taskSchema.js")
 
@@ -10,36 +11,15 @@ const createTaskController = async (req, res) => {
         const userId = req.user.id
 
         if (!title){
-            return res.status(400).json({
-                errors: [
-                    {
-                        status: "400",
-                        title: "Missing Fields",
-                        detail: "Title is required",
-                        source: {
-                            pointer: "/data/attributes"
-                        }
-                    }
-                ]
-            });
-        }
-
+            return res.status(400).json(missingFieldsError("Title is required"))
+        };
 
 
         const taskValidation = taskSchema.safeParse({ title, description });
 
-        if (!taskValidation.success) {
-            const errors = taskValidation.error.issues.map(issue => ({
-                status: "422",
-                title: "Unprocessable Content",
-                detail: issue.message,
-                source: {
-                    pointer: `/data/attributes/${issue.path[0]}`
-                }
-            }));
-
-            return res.status(422).json({ errors });
-        }
+        if(!taskValidation){
+            return res.status(422).json(validationError(taskValidation.error.issues))
+        };
 
 
         const newTask = await prisma.tasks.create({
@@ -77,54 +57,8 @@ const createTaskController = async (req, res) => {
             }
         });
     } catch (error) {
-        console.error("Task creation error:", error);
-
-       //if user doesnt exist
-        if (error.code === 'P2003') {
-            return res.status(400).json({
-                errors: [
-                    {
-                        status: "400",
-                        title: "Invalid User",
-                        detail: "The specified user does not exist",
-                        source: {
-                            pointer: "/data/relationships/user"
-                        }
-                    }
-                ]
-            });
-        }
-
-
-        // database connection error
-        if (error.code === 'P1001') {
-            return res.status(503).json({
-                errors: [
-                    {
-                        status: "503",
-                        title: "Service Unavailable", 
-                        detail: "Database connection failed",
-                        meta: {
-                            code: error.code
-                        }
-                    }
-                ]
-            });
-        }
-
-
-        return res.status(500).json({
-            errors: [
-                {
-                    status: "500",
-                    title: "Internal Server Error",
-                    detail: "Failed to create task",
-                }
-            ]
-        });     
-    }
-
-
-};
+        console.error("Creating task error", error);
+        return res.status(500).json(databaseError(error))
+}};
 
 module.exports = createTaskController;

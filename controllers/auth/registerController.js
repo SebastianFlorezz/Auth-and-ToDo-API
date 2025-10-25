@@ -4,39 +4,25 @@ const {PrismaClient} = require("../../generated/prisma");
 const prisma = new PrismaClient();
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
+const {
+    missingFieldsError,
+    validationError,
+    conflictError,
+    databaseError
+} = require("../../utils/errorResponses");
 
 const registerController = async (req, res) => {
     try {
         const { username, email, password } = req.body;
 
         if (!username || !email || !password) {
-            return res.status(400).json({
-                errors: [
-                    {
-                        status: "400",
-                        title: "Missing Fields",
-                        detail: "Username, email, and password are required",
-                        source: {
-                            pointer: "/data/attributes"
-                        }
-                    }
-                ]
-            });
+            return res.status(400).json(missingFieldsError("Username, email, and password are required"));
         }
 
         const validationResult = userSchema.safeParse({ username, email, password });
         
         if (!validationResult.success) {
-            const errors = validationResult.error.issues.map(issue => ({
-                status: "422",
-                title: "Unprocessable Content",
-                detail: issue.message,
-                source: {
-                    pointer: `/data/attributes/${issue.path[0]}`
-                }
-            }));
-
-            return res.status(422).json({ errors });
+            return res.status(422).json(validationError(validationResult.error.issues));
         }
 
         const existingUser = await prisma.user.findFirst({
@@ -50,18 +36,10 @@ const registerController = async (req, res) => {
 
         if (existingUser) {
             const field = existingUser.email === email ? 'email' : 'username';
-            return res.status(409).json({
-                errors: [
-                    {
-                        status: "409",
-                        title: "Resource Conflict",
-                        detail: `User with this ${field} already exists`,
-                        source: {
-                            pointer: `/data/attributes/${field}`
-                        }
-                    }
-                ]
-            });
+            return res.status(409).json(conflictError(
+                `User with this ${field} already exists`,
+                field
+            ));
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
@@ -74,7 +52,6 @@ const registerController = async (req, res) => {
             }
         });
 
-        
         const token = jwt.sign(
             { 
                 userId: newUser.id,
@@ -106,31 +83,7 @@ const registerController = async (req, res) => {
 
     } catch (error) {
         console.error("Registration error:", error);
-
-        if (error.code === "P2002") {
-            return res.status(409).json({
-                errors: [
-                    {
-                        status: "409",
-                        title: "Database Conflict",
-                        detail: "A user with this email or username already exists",
-                        source: {
-                            pointer: "/data/attributes"
-                        }
-                    }
-                ]
-            });
-        }
-
-        return res.status(500).json({
-            errors: [
-                {
-                    status: "500",
-                    title: "Internal Server Error",
-                    detail: "An unexpected error occurred during registration"
-                }
-            ]
-        });
+        return res.status(500).json(databaseError(error));
     }
 };
 

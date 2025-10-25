@@ -3,66 +3,38 @@ const prisma = new PrismaClient();
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
+const {
+    missingFieldsError,
+    conflictError,
+    databaseError
+} = require("../../utils/errorResponses");
 
 const loginController = async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        // Basic validation
+
         if (!email || !password) {
-            return res.status(400).json({
-                errors: [
-                    {
-                        status: "400",
-                        title: "Missing Fields",
-                        detail: "Email and password are required",
-                        source: {
-                            pointer: "/data/attributes"
-                        }
-                    }
-                ]
-            });
+            return res.status(400).json(missingFieldsError("Email and password are required"));
         }
 
-        // Find user by email
+
         const existingUser = await prisma.user.findFirst({
             where: { email: email }
         });
 
         if (!existingUser) {
-            return res.status(401).json({
-                errors: [
-                    {
-                        status: "401",
-                        title: "Unauthorized",
-                        detail: "Invalid email or password",
-                        source: {
-                            pointer: "/data/attributes/email"
-                        }
-                    }
-                ]
-            });
+            return res.status(401).json(conflictError("Invalid email or password", "email"));
         }
 
-        // Verify password
+
         const isPasswordValid = await bcrypt.compare(password, existingUser.password);
         
         if (!isPasswordValid) {
-            return res.status(401).json({
-                errors: [
-                    {
-                        status: "401",
-                        title: "Unauthorized",
-                        detail: "Invalid email or password",
-                        source: {
-                            pointer: "/data/attributes/password"
-                        }
-                    }
-                ]
-            });
+            return res.status(401).json(conflictError("Invalid email or password", "password"));
         }
 
-        // Generate JWT token
+
         const token = jwt.sign(
             { 
                 userId: existingUser.id,
@@ -72,7 +44,7 @@ const loginController = async (req, res) => {
             { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
         );
 
-        // Successful login response
+
         return res.status(200).json({
             data: {
                 type: "users",
@@ -95,16 +67,7 @@ const loginController = async (req, res) => {
 
     } catch (error) {
         console.error("Login error:", error);
-
-        return res.status(500).json({
-            errors: [
-                {
-                    status: "500",
-                    title: "Internal Server Error",
-                    detail: "An unexpected error occurred during login"
-                }
-            ]
-        });
+        return res.status(500).json(databaseError(error));
     }
 };
 
