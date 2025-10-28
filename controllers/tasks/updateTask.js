@@ -1,4 +1,3 @@
-const { id } = require("zod/locales");
 const {PrismaClient} = require("../../generated/prisma");
 const { validationError, forbiddenError, notFoundError, databaseError } = require("../../utils/errorResponses.js");
 const prisma = new PrismaClient();
@@ -36,7 +35,7 @@ const updateTaskController = async (req, res) => {
             data: {
                 title,
                 description,
-                userId: userId
+                userId: userIdParams
             },
         })
 
@@ -54,7 +53,7 @@ const updateTaskController = async (req, res) => {
                     user: {
                         data: {
                             type: "users",
-                            id: newTask.userId.toString()
+                            id: updatedTask.userId.toString()
                         },
                         links: {
                             related: `/api/users/${updatedTask.userId}`
@@ -74,3 +73,5 @@ const updateTaskController = async (req, res) => {
         return res.status(500).json(databaseError(error))
     }
 }
+
+module.exports = updateTaskController;
