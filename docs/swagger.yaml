@@ -1,0 +1,566 @@
+openapi: 3.0.3
+info:
+  title: Todo List API
+  description: RESTful API for authentication and task management
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:5000
+    description: Development server
+
+tags:
+  - name: Auth
+    description: Authentication endpoints
+  - name: Tasks
+    description: Task management
+
+paths:
+  /users/register:
+    post:
+      tags: [Auth]
+      summary: Register new user
+      description: Create a new user account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - email
+                - password
+              properties:
+                username:
+                  type: string
+                  example: "juanperez"
+                email:
+                  type: string
+                  format: email
+                  example: "juan@email.com"
+                password:
+                  type: string
+                  format: password
+                  example: "mypassword123"
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                        example: "users"
+                      id:
+                        type: string
+                        example: "1"
+                      attributes:
+                        type: object
+                        properties:
+                          username:
+                            type: string
+                            example: "juanperez"
+                          email:
+                            type: string
+                            example: "juan@email.com"
+                          createdAt:
+                            type: string
+                            format: date-time
+                            example: "2024-01-15T10:30:00Z"
+                          updatedAt:
+                            type: string
+                            format: date-time
+                            example: "2024-01-15T10:30:00Z"
+                      links:
+                        type: object
+                        properties:
+                          self:
+                            type: string
+                            example: "/api/users/1"
+                  meta:
+                    type: object
+                    properties:
+                      token:
+                        type: string
+                        example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                      expiresIn:
+                        type: string
+                        example: "7d"
+        '400':
+          description: Missing required fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict - User or email already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+
+  /users/login:
+    post:
+      tags: [Auth]
+      summary: User login
+      description: Authenticate user and return JWT token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "juan@email.com"
+                password:
+                  type: string
+                  format: password
+                  example: "mypassword123"
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                        example: "users"
+                      id:
+                        type: string
+                        example: "1"
+                      attributes:
+                        type: object
+                        properties:
+                          username:
+                            type: string
+                            example: "juanperez"
+                          email:
+                            type: string
+                            example: "juan@email.com"
+                          createdAt:
+                            type: string
+                            format: date-time
+                            example: "2024-01-15T10:30:00Z"
+                          updatedAt:
+                            type: string
+                            format: date-time
+                            example: "2024-01-15T10:30:00Z"
+                      links:
+                        type: object
+                        properties:
+                          self:
+                            type: string
+                            example: "/api/users/1"
+                  meta:
+                    type: object
+                    properties:
+                      token:
+                        type: string
+                        example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                      expiresIn:
+                        type: string
+                        example: "7d"
+        '400':
+          description: Missing required fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+
+  /tasks/create:
+    post:
+      tags: [Tasks]
+      summary: Create new task
+      description: Create a new task (requires authentication)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - title
+              properties:
+                title:
+                  type: string
+                  example: "Buy milk"
+                description:
+                  type: string
+                  example: "Go to supermarket to buy milk"
+      responses:
+        '201':
+          description: Task created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                        example: "tasks"
+                      id:
+                        type: string
+                        example: "1"
+                      attributes:
+                        type: object
+                        properties:
+                          title:
+                            type: string
+                            example: "Buy milk"
+                          description:
+                            type: string
+                            example: "Go to supermarket"
+                          createdAt:
+                            type: string
+                            format: date-time
+                            example: "2024-01-15T10:30:00Z"
+                          updatedAt:
+                            type: string
+                            format: date-time
+                            example: "2024-01-15T10:30:00Z"
+                      relationships:
+                        type: object
+                        properties:
+                          user:
+                            type: object
+                            properties:
+                              data:
+                                type: object
+                                properties:
+                                  type:
+                                    type: string
+                                    example: "users"
+                                  id:
+                                    type: string
+                                    example: "1"
+                              links:
+                                type: object
+                                properties:
+                                  related:
+                                    type: string
+                                    example: "/api/users/1"
+                      links:
+                        type: object
+                        properties:
+                          self:
+                            type: string
+                            example: "/api/tasks/1"
+        '400':
+          description: Missing required fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - Invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+
+  /tasks/put/{id}:
+    put:
+      tags: [Tasks]
+      summary: Update task
+      description: Update an existing task by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  example: "Buy milk and bread"
+                description:
+                  type: string
+                  example: "Go to supermarket to buy milk and bread"
+      responses:
+        '200':
+          description: Task updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                        example: "tasks"
+                      id:
+                        type: string
+                        example: "1"
+                      attributes:
+                        type: object
+                        properties:
+                          title:
+                            type: string
+                            example: "Buy milk and bread"
+                          description:
+                            type: string
+                            example: "Go to supermarket"
+                          createdAt:
+                            type: string
+                            format: date-time
+                            example: "2024-01-15T10:30:00Z"
+                          updatedAt:
+                            type: string
+                            format: date-time
+                            example: "2024-01-15T10:30:00Z"
+                      relationships:
+                        type: object
+                        properties:
+                          user:
+                            type: object
+                            properties:
+                              data:
+                                type: object
+                                properties:
+                                  type:
+                                    type: string
+                                    example: "users"
+                                  id:
+                                    type: string
+                                    example: "1"
+                              links:
+                                type: object
+                                properties:
+                                  related:
+                                    type: string
+                                    example: "/api/users/1"
+                      links:
+                        type: object
+                        properties:
+                          self:
+                            type: string
+                            example: "/api/tasks/1"
+        '400':
+          description: Missing required fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: You don't have permission for this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /tasks/delete/{id}:
+    delete:
+      tags: [Tasks]
+      summary: Delete task
+      description: Delete a task by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '200':
+          description: Task deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        example: "Task deleted successfully"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: You don't have permission for this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        username:
+          type: string
+          example: "juanperez"
+        email:
+          type: string
+          format: email
+          example: "juan@email.com"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+
+    Task:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        title:
+          type: string
+          example: "Buy milk"
+        description:
+          type: string
+          example: "Go to supermarket"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+        userId:
+          type: integer
+          example: 1
+
+    ErrorResponse:
+      type: object
+      properties:
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              status:
+                type: string
+                example: "400"
+              title:
+                type: string
+                example: "Missing Fields"
+              detail:
+                type: string
+                example: "Required fields are missing"
+              source:
+                type: object
+                properties:
+                  pointer:
+                    type: string
+                    example: "/data/attributes"
+
+    ValidationError:
+      type: object
+      properties:
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              status:
+                type: string
+                example: "422"
+              title:
+                type: string
+                example: "Unprocessable Content"
+              detail:
+                type: string
+                example: "Invalid email format"
+              source:
+                type: object
+                properties:
+                  pointer:
+                    type: string
+                    example: "/data/attributes/email"
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
