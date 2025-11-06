@@ -7,6 +7,10 @@ const prisma = new PrismaClient()
 const userRoutes = require("./routes/authRoutes.js")
 const taskRoutes = require("./routes/taskRoutes.js")
 
+
+app.use(express.json())
+app.use(express.urlencoded({extended: true}))
+
 app.listen(PORT, (error) => {
     if(error){
         console.error("Failed to start sever:",error)
@@ -16,11 +20,8 @@ app.listen(PORT, (error) => {
     console.log(`Documentation: http://localhost:${PORT || 5000}/api-docs/`)
 })
 
-app.use(express.json())
-app.use(express.urlencoded({extended: true}))
 
-//swagger io 
-
+//swagger UI
 const swaggerUi = require("swagger-ui-express");
 const YAML = require("yamljs");
 const swaggerDocument = YAML.load("./docs/swagger.yaml")
